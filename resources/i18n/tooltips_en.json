@@ -1,0 +1,10 @@
+{
+  "exp_button_t": "Select folder in Explorer",
+  "clear_button_t": "Clear selected path to the folder",
+  "pack_button_t": "Start packing textures into single 'ORM' texture",
+  "adv_opt_button_t": "Functionality still in progress",
+  "manual_button_t": "Open the user manual on github",
+  "cancel_button_t": "Cancel packaging. Wait app completes last texture in use",
+  "coffee_button_t": "Show appreciation dev for his time and effort",
+  "email_button_t": "Gave feedback, report bug, request feature or just say 'Hi!'"
+}

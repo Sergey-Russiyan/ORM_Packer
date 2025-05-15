@@ -1,0 +1,72 @@
+a/* resources/light_theme.qss */
+
+QWidget {
+    background-color: #ffffff;
+    color: #000000;
+    font-family: "Segoe UI";
+    font-size: 9pt;
+}
+
+QPushButton {
+    background-color: #f0f0f0;
+    border: 1px solid #cccccc;
+    padding: 5px;
+}
+
+QLineEdit, QTextEdit {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #cccccc;
+}
+
+QProgressBar {
+    border: 1px solid #cccccc;
+    background-color: #ffffff;
+    color: black;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: #2196F3;
+}
+
+QWidget {
+    background-color: #f0f0f0;
+    color: #000000;
+}
+
+QPushButton {
+    background-color: #e0e0e0;
+    border: none;
+    padding: 5px;
+}
+
+QPushButton:hover {
+    background-color: #d0d0d0;
+}
+
+QLineEdit, QTextEdit {
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #cccccc;
+}
+
+QProgressBar {
+    border: 1px solid #cccccc;
+    background-color: #e6e6e6;
+    color: black;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: #00cc66;
+}
+
+QCheckBox {
+    spacing: 5px;
+}
+
+QCheckBox::indicator {
+    width: 15px;
+    height: 15px;
+}
