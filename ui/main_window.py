@@ -373,7 +373,7 @@ class TexturePackerWindow(QWidget):
         self.log_output.ensureCursorVisible()
 
     def _show_manual(self):
-        webbrowser.open("https://github.com/BadGamesOK/TexturePacker/blob/master/README.md")
+        webbrowser.open("https://hallowed-car-2d0.notion.site/Texture-Packer-Manual-1f43ce421cf1808fb943fbfe6a93d716")
 
     def _open_donation_link(self):
         webbrowser.open("https://buymeacoffee.com/badgamesokt")
