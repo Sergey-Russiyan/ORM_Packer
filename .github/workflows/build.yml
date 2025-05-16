@@ -32,10 +32,6 @@ jobs:
       - name: Build EXE with PyInstaller
         run: pyinstaller ORMTexturePacker.spec
 
-      - name: List dist directory contents (debug)
-        run: dir dist
-        shell: pwsh
-
       - name: Verify EXE file exists
         run: |
           if (Test-Path "dist\ORMTexturePacker.exe") {
@@ -54,10 +50,6 @@ jobs:
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer_script.iss
 
-      - name: List Output directory contents (debug)
-        run: dir Output
-        shell: pwsh
-
       - name: Verify installer output file exists
         run: |
           if (Test-Path "Output\ORMTexturePackerInstaller.exe") {
@@ -68,12 +60,12 @@ jobs:
           }
         shell: pwsh
 
-      - name: Check if tag already has a release
+      - name: Check if release exists
         id: check_release
-        shell: bash  # ← this line forces bash instead of PowerShell
+        shell: bash
         run: |
-          result=$(gh release view v1.0.15 --json name -q .name || echo "")
-          if [ "$result" != "" ]; then
+          TAG_NAME="${GITHUB_REF##*/}"
+          if gh release view "$TAG_NAME" &>/dev/null; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "exists=false" >> $GITHUB_OUTPUT
@@ -90,6 +82,5 @@ jobs:
             **Links**
             - [Changelog](https://github.com/Sergey-Russiyan/ORM_Packer/blob/main/CHANGELOG.md)
           generate_release_notes: true
-          discussion_category_name: "Announcements"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
