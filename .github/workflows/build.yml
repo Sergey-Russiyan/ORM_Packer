@@ -72,5 +72,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: Output/ORMTexturePackerInstaller.exe
+          generate_release_notes: true
+          discussion_category_name: "Announcements"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
