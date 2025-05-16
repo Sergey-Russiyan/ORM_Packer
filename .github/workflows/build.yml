@@ -29,8 +29,14 @@ jobs:
       - name: Build EXE with PyInstaller
         run: pyinstaller ORMTexturePacker.spec
 
+      - name: List dist contents for debug
+        run: |
+          dir dist
+          dir dist\ORMTexturePacker
+        shell: pwsh
+
       - name: Verify EXE exists
-        run: dir dist\ORMTexturePacker
+        run: dir dist
 
       - name: Install Inno Setup
         run: choco install innosetup -y
