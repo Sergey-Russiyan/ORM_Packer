@@ -8,7 +8,7 @@ Compression=lzma
 SolidCompression=yes
 
 [Files]
-Source: "dist\ORMTexturePacker\ORMTexturePacker.exe"; DestDir: "{app}"
+Source: "dist\ORMTexturePacker.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\ORMTexturePacker"; Filename: "{app}\main.exe"
