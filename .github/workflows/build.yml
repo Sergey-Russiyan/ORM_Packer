@@ -29,14 +29,19 @@ jobs:
       - name: Build EXE with PyInstaller
         run: pyinstaller ORMTexturePacker.spec
 
-      - name: List dist contents for debug
-        run: |
-          dir dist
-          dir dist\ORMTexturePacker
+      - name: List dist directory contents (debug)
+        run: dir dist
         shell: pwsh
 
-      - name: Verify EXE exists
-        run: dir dist
+      - name: Verify EXE file exists
+        run: |
+          if (Test-Path "dist\ORMTexturePacker.exe") {
+            Write-Host "EXE found: dist\ORMTexturePacker.exe"
+          } else {
+            Write-Error "EXE NOT found!"
+            exit 1
+          }
+        shell: pwsh
 
       - name: Install Inno Setup
         run: choco install innosetup -y
@@ -46,17 +51,23 @@ jobs:
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer_script.iss
 
-      - name: Debug Output contents
+      - name: List Output directory contents (debug)
         run: dir Output
         shell: pwsh
 
-      - name: Verify Installer Output
-        run: dir Output
+      - name: Verify installer output file exists
+        run: |
+          if (Test-Path "Output\ORMTexturePackerInstaller.exe") {
+            Write-Host "Installer found: Output\ORMTexturePackerInstaller.exe"
+          } else {
+            Write-Error "Installer NOT found!"
+            exit 1
+          }
+        shell: pwsh
 
       - name: Upload Installer as Release Asset
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            Output/ORMTexturePackerInstaller.exe
+          files: Output/ORMTexturePackerInstaller.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
