@@ -18,6 +18,11 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 
+import os
+
+base_path = os.path.dirname(__file__)
+icon_path = os.path.join(base_path, 'resources', 'icon.ico')
+
 exe = EXE(
     pyz,
     a.scripts,
