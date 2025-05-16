@@ -3,6 +3,8 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
                                QGroupBox, QCheckBox, QFileDialog)
 from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt, QThread
+
+from utils.path_utils import resource_path
 from worker.packer_worker import PackerWorker
 from settings.settings_manager import SettingsManager
 from PySide6.QtCore import QFile, QTextStream
@@ -50,7 +52,7 @@ class TexturePackerWindow(QWidget):
         layout.addWidget(buttons_container)
 
     def _create_folder_ui(self):
-        resources_path = os.path.join("resources/i18n", "tooltips_en.json")
+        resources_path = resource_path(os.path.join("resources", "i18n", "tooltips_en.json"))
         resource_manager = ResourceManager(resources_path)
 
         self.folder_layout = QHBoxLayout()
@@ -95,7 +97,7 @@ class TexturePackerWindow(QWidget):
         self.progress_bar.setValue(0)
 
     def _create_advanced_ui(self):
-        resources_path = os.path.join("resources/i18n", "tooltips_en.json")
+        resources_path = resource_path(os.path.join("resources", "i18n", "tooltips_en.json"))
         resource_manager = ResourceManager(resources_path)
         # Advanced options toggle button
         self.advanced_button = DelayedTooltipButton("Advanced Options ▼", "adv_opt_button_t", delay_ms=1000,
@@ -119,7 +121,7 @@ class TexturePackerWindow(QWidget):
         self.advanced_options_group.setLayout(advanced_layout)
 
     def _create_buttons(self):
-        resources_path = os.path.join("resources/i18n", "tooltips_en.json")
+        resources_path = resource_path(os.path.join("resources", "i18n", "tooltips_en.json"))
         resource_manager = ResourceManager(resources_path)
 
         # Main buttons container
