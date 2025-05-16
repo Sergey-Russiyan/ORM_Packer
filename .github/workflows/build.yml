@@ -70,8 +70,9 @@ jobs:
 
       - name: Check if tag already has a release
         id: check_release
+        shell: bash  # ← this line forces bash instead of PowerShell
         run: |
-          result=$(gh release view ${{ github.ref_name }} --json name -q .name || echo "")
+          result=$(gh release view v1.0.15 --json name -q .name || echo "")
           if [ "$result" != "" ]; then
             echo "exists=true" >> $GITHUB_OUTPUT
           else
