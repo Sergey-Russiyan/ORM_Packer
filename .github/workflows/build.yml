@@ -6,6 +6,9 @@ on:
       - 'v*'  # Trigger on tag push like v1.0.0
   workflow_dispatch:  # Allow manual trigger
 
+permissions:
+  contents: write  # Grants permission to create releases
+
 jobs:
   build:
     name: Build and Package
