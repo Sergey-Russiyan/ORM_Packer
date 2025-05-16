@@ -33,8 +33,10 @@ jobs:
       run: |
         choco install innosetup -y
 
-    - name: Create Installer with Inno Setup
-      run: '"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer_script.iss'
+    - name: Build installer with Inno Setup
+      shell: pwsh
+      run: |
+        & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer_script.iss"
 
     - name: Upload Installer as Release Asset
       uses: softprops/action-gh-release@v1
