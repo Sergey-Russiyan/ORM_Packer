@@ -72,6 +72,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: Output/ORMTexturePackerInstaller.exe
+          body: |
+            **Links**
+            - [Changelog](https://github.com/Sergey-Russiyan/ORM_Packer/blob/main/CHANGELOG.md)
+
           generate_release_notes: true
           discussion_category_name: "Announcements"
         env:
