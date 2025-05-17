@@ -1,5 +1,6 @@
 import os
 import re
+import time
 from PIL import Image
 
 
@@ -11,7 +12,8 @@ class TexturePackerCore:
     @staticmethod
     def process_texture(base, maps, output_folder, suffixes):
         try:
-            # Use user-configured keys (e.g. 'ambient_occlusion', 'roughness', 'metallic')
+            start_time = time.time()  # Start timing
+
             ao_path = maps.get(suffixes['ao'])
             rough_path = maps.get(suffixes['roughness'])
             metal_path = maps.get(suffixes['metallic'])
@@ -29,7 +31,9 @@ class TexturePackerCore:
             orm_img = Image.merge("RGB", (ao_img, rough_img, metal_img))
             out_path = os.path.join(output_folder, f"{base}_ORM.png")
             orm_img.save(out_path, optimize=True)
-            return True, f"Packed {base}_ORM.png"
+
+            elapsed = time.time() - start_time  # End timing
+            return True, f"✅ Packed <b>{base}_ORM</b> in <b>{elapsed:.1f}</b> seconds"
 
         except Exception as e:
             return False, str(e)

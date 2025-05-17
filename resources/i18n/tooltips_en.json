@@ -6,5 +6,6 @@
   "manual_button_t": "Open the user manual on github",
   "cancel_button_t": "Cancel packaging. Wait app completes last texture in use",
   "coffee_button_t": "Show appreciation dev for his time and effort",
-  "email_button_t": "Gave feedback, report bug, request feature or just say 'Hi!'"
+  "email_button_t": "Gave feedback, report bug, request feature or just say 'Hi!'",
+  "delete_button_t": "Delete all files with suffixes from AO / Roughness / Metallic fields"
 }
