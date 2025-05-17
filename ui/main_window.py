@@ -1,18 +1,13 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
-                               QPushButton, QLabel, QTextEdit, QProgressBar,
+                               QLabel, QTextEdit, QProgressBar,
                                QGroupBox, QCheckBox, QFileDialog)
-from PySide6.QtGui import QIcon
 from PySide6.QtCore import Qt, QThread
-
-from utils.path_utils import resource_path
 from worker.packer_worker import PackerWorker
 from settings.settings_manager import SettingsManager
-from PySide6.QtCore import QFile, QTextStream
 from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QPushButton, QToolTip
 from PySide6.QtCore import QTimer, QPoint
-from PySide6.QtWidgets import QSizePolicy, QGridLayout
-from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QSizePolicy
 
 import webbrowser
 import os
