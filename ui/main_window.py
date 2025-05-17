@@ -52,17 +52,21 @@ class TexturePackerWindow(QWidget):
 
         layout.addWidget(buttons_container)
 
+    def make_button(self, text, tooltip_key=None):
+        return DelayedTooltipButton(
+            text,
+            tooltip_key,
+            resource_manager=self.resource_manager  # default
+        )
+
     def _create_folder_ui(self):
         resource_manager = self.resource_manager
 
         self.folder_layout = QHBoxLayout()
         self.folder_path_edit = QLineEdit()
         self.folder_button = QPushButton()
-        self.folder_button = DelayedTooltipButton("📁", "exp_button_t", delay_ms=1000,
-                                                resource_manager=resource_manager)
-        self.folder_clear_button = DelayedTooltipButton("❌", "clear_button_t", delay_ms=1000,
-                                                  resource_manager=resource_manager)
-
+        self.folder_button = self.make_button("📁", "exp_button_t")
+        self.folder_clear_button = self.make_button("❌", "clear_button_t")
 
         self.folder_layout.addWidget(QLabel("Path to Folder:"))
         self.folder_layout.addWidget(self.folder_path_edit)
@@ -100,8 +104,7 @@ class TexturePackerWindow(QWidget):
         resource_manager = self.resource_manager
 
         # Advanced options toggle button
-        self.advanced_button = DelayedTooltipButton("Advanced Options ▼", "adv_opt_button_t", delay_ms=1000,
-                                                  resource_manager=resource_manager)
+        self.advanced_button = self.make_button("Advanced Options ▼", "adv_opt_button_t")
         self.advanced_button.setCheckable(True)
 
         # Advanced options group
@@ -135,8 +138,8 @@ class TexturePackerWindow(QWidget):
         start_layout = QHBoxLayout(start_container)
         start_layout.setContentsMargins(0, 0, 0, 0)
 
-        self.pack_button = DelayedTooltipButton("🔄 Start Pack", "pack_button_t", delay_ms=1000,
-                                                  resource_manager=resource_manager)
+        self.pack_button = self.make_button("🔄 Start Pack", "pack_button_t")
+        self.pack_button.setObjectName("packButton")
 
         self.pack_button.setFixedHeight(60)  # Fixed 2x height
         start_layout.addWidget(self.pack_button)
@@ -153,10 +156,8 @@ class TexturePackerWindow(QWidget):
         col1_layout = QVBoxLayout(col1)
         col1_layout.setSpacing(5)
         self.cancel_button = QPushButton()
-        self.cancel_button = DelayedTooltipButton("✋ Cancel", "cancel_button_t", delay_ms=1000,
-                                                  resource_manager=resource_manager)
-        self.manual_button = DelayedTooltipButton("📖 Manual", "manual_button_t", delay_ms=1000,
-                                                  resource_manager=resource_manager)
+        self.cancel_button = self.make_button("✋ Cancel", "cancel_button_t")
+        self.manual_button = self.make_button("📖 Manual", "manual_button_t")
         for btn in [self.cancel_button, self.manual_button]:
             btn.setFixedHeight(30)  # Normal height
         col1_layout.addWidget(self.cancel_button)
@@ -168,10 +169,8 @@ class TexturePackerWindow(QWidget):
         col2_layout = QVBoxLayout(col2)
         col2_layout.setSpacing(5)
 
-        self.buy_button = DelayedTooltipButton("☕ Buy me a Coffee", "coffee_button_t", delay_ms=1000,
-                                                  resource_manager=resource_manager)
-        self.feedback_button = DelayedTooltipButton("📧 Write Email", "email_button_t", delay_ms=1000,
-                                               resource_manager=resource_manager)
+        self.buy_button = self.make_button("☕ Buy me a Coffee", "coffee_button_t")
+        self.feedback_button = self.make_button("📧 Write Email", "email_button_t")
 
         for btn in [self.buy_button, self.feedback_button]:
             btn.setFixedHeight(30)  # Normal height
@@ -211,7 +210,7 @@ class TexturePackerWindow(QWidget):
         self.advanced_button.clicked.connect(self._toggle_advanced_options)
 
         self.dark_theme_checkbox.stateChanged.connect(self._handle_theme_change)
-        #self.dark_theme_checkbox.stateChanged.connect(self.on_dark_theme_state_changed)
+        self.dark_theme_checkbox.stateChanged.connect(self.on_dark_theme_state_changed)
 
     def _handle_theme_change(self, state: int):
         print(f"Theme checkbox changed. State: {state}")
@@ -228,16 +227,6 @@ class TexturePackerWindow(QWidget):
         visible = self.advanced_button.isChecked()
         self.advanced_options_group.setVisible(visible)
         self.advanced_button.setText("Advanced Options ▲" if visible else "Advanced Options ▼")
-
-    def on_dark_theme_state_changed(self, state: int):
-        print(f"Theme change requested. State: {state}")
-        if state == Qt.Checked:
-            self._apply_theme(True)  # dark theme
-        elif state == Qt.Unchecked:
-            self._apply_theme(False)  # light theme
-        else:
-            # Optionally handle partially checked or ignore
-            pass
 
     def on_dark_theme_state_changed(self, state: int):
         print(f"on_dark_theme_state_changed called with state: {state}")
