@@ -22,11 +22,17 @@ class TexturePackerWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.settings = SettingsManager()
+        self.resource_manager = self._init_resource_manager()
 
         self.worker_thread = None
         self._init_ui()
         self._load_settings()
         self._setup_connections()
+
+    def _init_resource_manager(self):
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.normpath(os.path.join(base_dir, '..', 'resources', 'i18n', 'tooltips_en.json'))
+        return ResourceManager(path)
 
     def _init_ui(self):
         self.setWindowTitle("ORM Texture Packer")
@@ -52,8 +58,7 @@ class TexturePackerWindow(QWidget):
         layout.addWidget(buttons_container)
 
     def _create_folder_ui(self):
-        resources_path = resource_path(os.path.join("resources", "i18n", "tooltips_en.json"))
-        resource_manager = ResourceManager(resources_path)
+        resource_manager = self.resource_manager
 
         self.folder_layout = QHBoxLayout()
         self.folder_path_edit = QLineEdit()
@@ -97,8 +102,8 @@ class TexturePackerWindow(QWidget):
         self.progress_bar.setValue(0)
 
     def _create_advanced_ui(self):
-        resources_path = resource_path(os.path.join("resources", "i18n", "tooltips_en.json"))
-        resource_manager = ResourceManager(resources_path)
+        resource_manager = self.resource_manager
+
         # Advanced options toggle button
         self.advanced_button = DelayedTooltipButton("Advanced Options ▼", "adv_opt_button_t", delay_ms=1000,
                                                   resource_manager=resource_manager)
@@ -121,8 +126,7 @@ class TexturePackerWindow(QWidget):
         self.advanced_options_group.setLayout(advanced_layout)
 
     def _create_buttons(self):
-        resources_path = resource_path(os.path.join("resources", "i18n", "tooltips_en.json"))
-        resource_manager = ResourceManager(resources_path)
+        resource_manager = self.resource_manager
 
         # Main buttons container
         buttons_container = QWidget()
