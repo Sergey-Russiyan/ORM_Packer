@@ -10,7 +10,7 @@ a = Analysis(
     ('resources/dark_theme.qss', 'resources'),
     ('resources/light_theme.qss', 'resources'),
     ('resources/done.wav', 'resources'),
-]
+],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
