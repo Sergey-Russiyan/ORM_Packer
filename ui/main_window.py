@@ -1,17 +1,20 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
                                QLabel, QTextEdit, QProgressBar,
                                QGroupBox, QCheckBox, QFileDialog)
-from PySide6.QtCore import Qt, QThread
+from PySide6.QtCore import Qt
 from worker.packer_worker import PackerWorker
 from settings.settings_manager import SettingsManager
 from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QPushButton, QToolTip
 from PySide6.QtCore import QTimer, QPoint
 from PySide6.QtWidgets import QSizePolicy
+from PySide6.QtWidgets import QMessageBox
+from PySide6.QtCore import QThread
 
 import webbrowser
 import os
 import json
+
 
 class TexturePackerWindow(QWidget):
     def __init__(self):
@@ -141,9 +144,16 @@ class TexturePackerWindow(QWidget):
         self.pack_button = self.make_button("🔄 Start Pack", "pack_button_t")
         self.pack_button.setObjectName("packButton")
 
+        self.delete_button = self.make_button("🗑️ Delete Files", "delete_button_t")
+        self.delete_button.setObjectName("deleteButton")
+
         self.pack_button.setFixedHeight(60)  # Fixed 2x height
         start_layout.addWidget(self.pack_button)
         main_layout.addWidget(start_container, stretch=1)  # 1/3 width
+
+        self.delete_button.setFixedHeight(60)  # Fixed 2x height
+        start_layout.addWidget(self.delete_button)
+        #main_layout.addWidget(start_container, stretch=1)  # 1/3 width
 
         # 2. Right Buttons Section (2/3 width total)
         right_container = QWidget()
@@ -203,6 +213,9 @@ class TexturePackerWindow(QWidget):
         self.folder_button.clicked.connect(self._select_folder)
         self.folder_clear_button.clicked.connect(lambda: self.folder_path_edit.setText(""))
         self.pack_button.clicked.connect(self._start_packing)
+
+        self.delete_button.clicked.connect(self._handle_delete_files)
+
         self.cancel_button.clicked.connect(self._cancel_packing)
         self.manual_button.clicked.connect(self._show_manual)
         self.buy_button.clicked.connect(self._open_donation_link)
@@ -211,6 +224,60 @@ class TexturePackerWindow(QWidget):
 
         self.dark_theme_checkbox.stateChanged.connect(self._handle_theme_change)
         self.dark_theme_checkbox.stateChanged.connect(self.on_dark_theme_state_changed)
+
+    def _handle_delete_files(self):
+        folder_path = self.folder_path_edit.text().strip()
+        if not folder_path or not os.path.isdir(folder_path):
+            self.log_output.append("⚠️ Invalid folder path.")
+            return
+
+        # Get suffixes and normalize (strip and lower)
+        suffixes = [
+            self.ao_suffix.text().strip().lower(),
+            self.roughness_suffix.text().strip().lower(),
+            self.metallic_suffix.text().strip().lower(),
+        ]
+        # Filter out empty suffixes
+        suffixes = [s for s in suffixes if s]
+
+        if not suffixes:
+            self.log_output.append("⚠️ No suffixes specified for deletion.")
+            return
+
+        # Find matching files
+        files_to_delete = []
+        for filename in os.listdir(folder_path):
+            base, ext = os.path.splitext(filename)
+            base_lower = base.lower()
+            for suffix in suffixes:
+                if base_lower.endswith('_' + suffix):
+                    files_to_delete.append(filename)
+                    break
+
+        if not files_to_delete:
+            self.log_output.append("⚠️ No files matched the given suffixes for deletion in current folder.")
+            return
+
+        # Confirmation dialog
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle("Confirm Delete")
+        msg_box.setText(f"Are you sure you want to delete {len(files_to_delete)} files?")
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+        msg_box.setDefaultButton(QMessageBox.Cancel)
+
+        ret = msg_box.exec()
+        if ret == QMessageBox.Yes:
+            deleted_count = 0
+            for file in files_to_delete:
+                try:
+                    os.remove(os.path.join(folder_path, file))
+                    self.log_output.append(f'<span style="color:black">⚠️ <b>Deleted</>: {file}</span>')
+                    deleted_count += 1
+                except Exception as e:
+                    self.log_output.append(f"⚠️ Failed to delete {file}: {e}")
+            self.log_output.append(f"❗<b>Deletion</b> complete: <b>{deleted_count}</b> files deleted.")
+        else:
+            self.log_output.append("⚠️ Delete operation canceled.")
 
     def _handle_theme_change(self, state: int):
         print(f"Theme checkbox changed. State: {state}")
@@ -305,7 +372,7 @@ class TexturePackerWindow(QWidget):
     def _start_packing(self):
         folder = self.folder_path_edit.text()
         if not folder or not os.path.isdir(folder):
-            self.log_output.append('<span style="color:red">Please select a valid folder before starting.</span>')
+            self.log_output.append('<span style="color:orange">⚠️ Please select a valid folder before starting.</span>')
             return
 
         suffixes = {
@@ -327,6 +394,7 @@ class TexturePackerWindow(QWidget):
         self.worker.progress.connect(self._handle_log_output)
         self.worker.progress_percent.connect(self.progress_bar.setValue)
         self.worker.finished.connect(self._finish_packing)
+        self.worker.finished_with_count.connect(self._handle_finished_count)
 
         self.worker_thread.started.connect(self.worker.run)
         self.worker_thread.start()
@@ -338,16 +406,29 @@ class TexturePackerWindow(QWidget):
             self.worker.stopped = True
         self.pack_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
-        self.log_output.append('<span style="color:orange">Packing cancelled by user.</span>')
+        self.log_output.append('<span style="color:black">⚠️ Packing <b>cancelled</b> by user. Finalizing packing of last texture in progress...</span>')
+
+    def _handle_finished_count(self, count):
+        print(f"_handle_finished_count called with: {count}")
+        self.packed_files_count = count
+        if count == 0:
+            self.log_output.append('<span style="color:orange">⚠️ <b>No files were packed.</b></span>')
+        else:
+            self.log_output.append(f'<span style="color:green">🎉 <b>{count}</b> files packed successfully.</span>')
 
     def _finish_packing(self):
+        print("_finish_packing called")
         self.pack_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         self.progress_bar.setValue(100)
-        self.log_output.append('<span style="color:green">Packing process finished.</span>')
+
+        if hasattr(self, "packed_files_count") and self.packed_files_count == 0:
+            self.log_output.append('<span style="color:orange">⚠️ No files matched the suffixes. Nothing packed.</span>')
+        else:
+            self.log_output.append('<span style="color:black">🎉 Packing process <b>finished</b>.</span>')
 
         if self.sound_checkbox.isChecked():
-            # Sound implementation would go here
+            # play sound here if implemented
             pass
 
         if hasattr(self, "worker_thread"):

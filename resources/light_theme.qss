@@ -24,10 +24,25 @@ QPushButton#packButton {
     border: 1px solid #4caf50;
     color: #1b5e20;
     border-radius: 3px;
+    font-weight: bold;
 }
 
 QPushButton#packButton:hover {
     background-color: #9ade9a;
+    font-weight: bold;
+}
+
+QPushButton#deleteButton {
+    background-color: #f5e2dc;  /* light red */
+    border: 1px solid #4caf50;
+    color: #1b5e20;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+QPushButton#deleteButton:hover {
+    background-color: #f0a18d;
+    font-weight: bold;
 }
 
 QLineEdit, QTextEdit {
