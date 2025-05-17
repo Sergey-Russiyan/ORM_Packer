@@ -4,8 +4,7 @@ class SettingsManager:
     def __init__(self):
         self._settings = QSettings("BadGamesOK", "TexturePacker")
 
-    def save_settings(self, settings):  # Remove underscore to make it public
-        """Save all settings to persistent storage"""
+    def save_settings(self, settings):
         try:
             # Save folder path
             self._settings.setValue("last_folder", settings.get('folder', ""))
@@ -25,7 +24,6 @@ class SettingsManager:
             print(f"Error saving settings: {e}")
 
     def load_settings(self):
-        """Load settings with proper defaults"""
         return {
             'folder': self._settings.value("last_folder", ""),
             'suffixes': {

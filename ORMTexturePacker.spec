@@ -5,9 +5,12 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[
-        ('resources/i18n/*.json', 'resources/i18n'),  # Include your tooltip files
-    ],
+ datas = [
+    ('resources/i18n/*.json', 'resources/i18n'),
+    ('resources/dark_theme.qss', 'resources'),
+    ('resources/light_theme.qss', 'resources'),
+    ('resources/done.wav', 'resources'),
+]
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

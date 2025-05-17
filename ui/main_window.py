@@ -1,19 +1,24 @@
+import json
+import os
+import sys
+import webbrowser
+from typing import cast
+
+from PySide6.QtCore import QThread
+from PySide6.QtCore import QTimer, QPoint
+from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
+from PySide6.QtCore import QUrl
+from utils.path_utils import get_base_dir
+from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QPushButton, QToolTip
+from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
                                QLabel, QTextEdit, QProgressBar,
                                QGroupBox, QCheckBox, QFileDialog)
-from PySide6.QtCore import Qt
-from worker.packer_worker import PackerWorker
-from settings.settings_manager import SettingsManager
-from PySide6.QtWidgets import QApplication
-from PySide6.QtWidgets import QPushButton, QToolTip
-from PySide6.QtCore import QTimer, QPoint
-from PySide6.QtWidgets import QSizePolicy
-from PySide6.QtWidgets import QMessageBox
-from PySide6.QtCore import QThread
 
-import webbrowser
-import os
-import json
+from settings.settings_manager import SettingsManager
+from worker.packer_worker import PackerWorker
 
 
 class TexturePackerWindow(QWidget):
@@ -27,7 +32,14 @@ class TexturePackerWindow(QWidget):
         self._load_settings()
         self._setup_connections()
 
-    def _init_resource_manager(self):
+        self.player = QMediaPlayer()
+        self.player.errorOccurred.connect(lambda err: print(f"Player error: {err}"))
+        self.player.mediaStatusChanged.connect(lambda status: print(f"Media status: {status}"))
+        self.audio_output = QAudioOutput()
+        self.player.setAudioOutput(self.audio_output)
+
+    @staticmethod
+    def _init_resource_manager():
         base_dir = os.path.dirname(os.path.abspath(__file__))
         path = os.path.normpath(os.path.join(base_dir, '..', 'resources', 'i18n', 'tooltips_en.json'))
         return ResourceManager(path)
@@ -63,8 +75,6 @@ class TexturePackerWindow(QWidget):
         )
 
     def _create_folder_ui(self):
-        resource_manager = self.resource_manager
-
         self.folder_layout = QHBoxLayout()
         self.folder_path_edit = QLineEdit()
         self.folder_button = QPushButton()
@@ -104,8 +114,6 @@ class TexturePackerWindow(QWidget):
         self.progress_bar.setValue(0)
 
     def _create_advanced_ui(self):
-        resource_manager = self.resource_manager
-
         # Advanced options toggle button
         self.advanced_button = self.make_button("Advanced Options ▼", "adv_opt_button_t")
         self.advanced_button.setCheckable(True)
@@ -127,8 +135,6 @@ class TexturePackerWindow(QWidget):
         self.advanced_options_group.setLayout(advanced_layout)
 
     def _create_buttons(self):
-        resource_manager = self.resource_manager
-
         # Main buttons container
         buttons_container = QWidget()
         buttons_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -153,7 +159,6 @@ class TexturePackerWindow(QWidget):
 
         self.delete_button.setFixedHeight(60)  # Fixed 2x height
         start_layout.addWidget(self.delete_button)
-        #main_layout.addWidget(start_container, stretch=1)  # 1/3 width
 
         # 2. Right Buttons Section (2/3 width total)
         right_container = QWidget()
@@ -192,28 +197,11 @@ class TexturePackerWindow(QWidget):
 
         return buttons_container
 
-    def _load_settings(self):
-        settings = self.settings.load_settings()
-        dark_theme = bool(settings['advanced']['dark_theme'])
-        print(f"Initial theme setting: {settings['advanced']['dark_theme']}")
-        print(f"Loading settings - dark_theme: {dark_theme}")  # Debug print
-
-        self.dark_theme_checkbox.setChecked(dark_theme)
-        self._apply_theme(dark_theme)  # call once
-
-        self.folder_path_edit.setText(settings['folder'])
-        self.ao_suffix.setText(settings['suffixes']['ao'])
-        self.roughness_suffix.setText(settings['suffixes']['roughness'])
-        self.metallic_suffix.setText(settings['suffixes']['metallic'])
-
-        self.export_log_checkbox.setChecked(settings['advanced']['export_log'])
-        self.sound_checkbox.setChecked(settings['advanced']['play_sound'])
-
     def _setup_connections(self):
         self.folder_button.clicked.connect(self._select_folder)
         self.folder_clear_button.clicked.connect(lambda: self.folder_path_edit.setText(""))
-        self.pack_button.clicked.connect(self._start_packing)
 
+        self.pack_button.clicked.connect(self._start_packing)
         self.delete_button.clicked.connect(self._handle_delete_files)
 
         self.cancel_button.clicked.connect(self._cancel_packing)
@@ -222,8 +210,9 @@ class TexturePackerWindow(QWidget):
         self.feedback_button.clicked.connect(self._open_email_client)
         self.advanced_button.clicked.connect(self._toggle_advanced_options)
 
-        self.dark_theme_checkbox.stateChanged.connect(self._handle_theme_change)
-        self.dark_theme_checkbox.stateChanged.connect(self.on_dark_theme_state_changed)
+        self.dark_theme_checkbox.stateChanged.connect(self._on_theme_checkbox_changed)
+        self.export_log_checkbox.stateChanged.connect(self._on_checkbox_changed)
+        self.sound_checkbox.stateChanged.connect(self._on_checkbox_changed)
 
     def _handle_delete_files(self):
         folder_path = self.folder_path_edit.text().strip()
@@ -259,14 +248,14 @@ class TexturePackerWindow(QWidget):
             return
 
         # Confirmation dialog
-        msg_box = QMessageBox(self)
+        msg_box = QMessageBox()
         msg_box.setWindowTitle("Confirm Delete")
         msg_box.setText(f"Are you sure you want to delete {len(files_to_delete)} files?")
-        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-        msg_box.setDefaultButton(QMessageBox.Cancel)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
+        msg_box.setDefaultButton(QMessageBox.StandardButton.Cancel)
 
         ret = msg_box.exec()
-        if ret == QMessageBox.Yes:
+        if ret == QMessageBox.StandardButton.Yes:
             deleted_count = 0
             for file in files_to_delete:
                 try:
@@ -279,61 +268,48 @@ class TexturePackerWindow(QWidget):
         else:
             self.log_output.append("⚠️ Delete operation canceled.")
 
-    def _handle_theme_change(self, state: int):
-        print(f"Theme checkbox changed. State: {state}")
-        if state == Qt.Checked:
-            print("Applying dark theme")
-            self._apply_theme(True)
-        elif state == Qt.Unchecked:
-            print("Applying light theme")
-            self._apply_theme(False)
-        else:
-            print("Checkbox in partially checked state (ignored)")
-
     def _toggle_advanced_options(self):
         visible = self.advanced_button.isChecked()
         self.advanced_options_group.setVisible(visible)
         self.advanced_button.setText("Advanced Options ▲" if visible else "Advanced Options ▼")
 
-    def on_dark_theme_state_changed(self, state: int):
-        print(f"on_dark_theme_state_changed called with state: {state}")
-        if state == Qt.Checked:
-            self._apply_theme(True)
-        elif state == Qt.Unchecked:
-            self._apply_theme(False)
+    def _on_theme_checkbox_changed(self, state: int):
+        dark_theme = bool(state)
+        print(f"Theme checkbox changed. State: {state} -> {'dark' if dark_theme else 'light'}")
+        self._apply_theme(dark_theme)
+        self._save_settings()
 
-    def _apply_theme(self, dark_theme: bool):
-        """Properly apply theme with full widget refresh"""
+    def _on_checkbox_changed(self, state):
+        self._save_settings()
+
+    @staticmethod
+    def _apply_theme(dark_theme: bool):
         try:
-            # Get the absolute path to resources
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            base_dir = get_base_dir()
             theme_file = "dark_theme.qss" if dark_theme else "light_theme.qss"
             theme_path = os.path.join(base_dir, "resources", theme_file)
 
             print(f"Expected theme file path: {theme_path}")
             print(f"Exists? {os.path.exists(theme_path)}")
-            print(f"Loading theme from: {theme_path}")
 
             if os.path.exists(theme_path):
                 with open(theme_path, "r", encoding='utf-8') as f:
                     stylesheet = f.read()
-                    print(f"Read {len(stylesheet)} bytes from stylesheet")
 
-                # Append your QWidget background/color overrides here
                 if dark_theme:
                     stylesheet += "\n QWidget { background-color: #222; color: #eee; }"
                 else:
                     stylesheet += "\n QWidget { background-color: #fff; color: #000; }"
 
                 app = QApplication.instance()
-                app.setStyle("Fusion")
-                app.setStyleSheet("")  # Clear old style
-                QApplication.processEvents()
-                # Apply new style (with appended QWidget rule)
-                app.setStyleSheet(stylesheet)
-                print(f"Set {'dark' if dark_theme else 'light'} theme stylesheet")
+                if app is not None:
+                    app = cast(QApplication, app)  # Help IDE understand type
+                    app.setStyle("Fusion")
+                    app.setStyleSheet("")
+                    QApplication.processEvents()
+                    app.setStyleSheet(stylesheet)
 
-                # Force refresh all widgets
+                # Refresh all widgets
                 for widget in app.allWidgets():
                     widget.style().unpolish(widget)
                     widget.style().polish(widget)
@@ -345,8 +321,23 @@ class TexturePackerWindow(QWidget):
         except Exception as e:
             print(f"Error applying theme: {str(e)}")
 
+    def _load_settings(self):
+        settings = self.settings.load_settings()
+
+        # Dark theme checkbox + theme application
+        dark_theme = bool(settings['advanced']['dark_theme'])
+        self.dark_theme_checkbox.setChecked(dark_theme)
+        self._apply_theme(dark_theme)
+
+        # Other UI elements
+        self.folder_path_edit.setText(settings['folder'])
+        self.ao_suffix.setText(settings['suffixes']['ao'])
+        self.roughness_suffix.setText(settings['suffixes']['roughness'])
+        self.metallic_suffix.setText(settings['suffixes']['metallic'])
+        self.export_log_checkbox.setChecked(settings['advanced']['export_log'])
+        self.sound_checkbox.setChecked(settings['advanced']['play_sound'])
+
     def _save_settings(self):
-        """Centralized method to save all current settings"""
         current_settings = {
             'folder': self.folder_path_edit.text(),
             'suffixes': {
@@ -360,8 +351,8 @@ class TexturePackerWindow(QWidget):
                 'play_sound': self.sound_checkbox.isChecked()
             }
         }
-        print(f"Saving settings. Dark theme: {current_settings['advanced']['dark_theme']}")
-        self.settings.save_settings(current_settings)  # Now calls the public method
+        print(f"Saving settings: {current_settings['advanced']}")
+        self.settings.save_settings(current_settings)
 
     def _select_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder", self.folder_path_edit.text())
@@ -425,11 +416,10 @@ class TexturePackerWindow(QWidget):
         if hasattr(self, "packed_files_count") and self.packed_files_count == 0:
             self.log_output.append('<span style="color:orange">⚠️ No files matched the suffixes. Nothing packed.</span>')
         else:
-            self.log_output.append('<span style="color:black">🎉 Packing process <b>finished</b>.</span>')
+            self.log_output.append('<span style="color:green">🎉 Packing process <b>finished</b>.</span>')
 
         if self.sound_checkbox.isChecked():
-            # play sound here if implemented
-            pass
+            self._play_done_sound()
 
         if hasattr(self, "worker_thread"):
             self.worker_thread.quit()
@@ -443,13 +433,24 @@ class TexturePackerWindow(QWidget):
             self.log_output.append(message)
         self.log_output.ensureCursorVisible()
 
-    def _show_manual(self):
+    def _play_done_sound(self):
+        base_dir = get_base_dir()
+        sound_path = os.path.join(base_dir, "resources", "done.wav")
+        url = QUrl.fromLocalFile(sound_path)
+        self.player.setSource(url)
+        self.audio_output.setVolume(0.5)
+        self.player.play()
+
+    @staticmethod
+    def _show_manual():
         webbrowser.open("https://github.com/Sergey-Russiyan/ORM_Packer/blob/main/README.md")
 
-    def _open_donation_link(self):
+    @staticmethod
+    def _open_donation_link():
         webbrowser.open("https://buymeacoffee.com/badgamesokt")
 
-    def _open_email_client(self):
+    @staticmethod
+    def _open_email_client():
         email = "bad.games.ok@gmail.com"
         subject = "Feedback for Texture Packer App"
         body = "Hi,\n\nI wanted to share the following feedback:\n\n"
