@@ -9,6 +9,7 @@ a = Analysis(
     ('resources/i18n/tooltips_en.json', 'resources/i18n'),
     ('resources/dark_theme.qss', 'resources'),
     ('resources/light_theme.qss', 'resources'),
+    ('resources/icon.ico', 'resources'),
     ('resources/done.wav', 'resources'),
 ],
     hiddenimports=[],

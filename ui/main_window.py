@@ -1,13 +1,13 @@
 import json
 import os
-import sys
 import webbrowser
 from typing import cast
 
 from PySide6.QtCore import QThread
 from PySide6.QtCore import QTimer, QPoint
-from PySide6.QtMultimedia import QMediaPlayer, QAudioOutput
-from PySide6.QtCore import QUrl
+
+
+from utils.file_cleaner import FileCleaner
 from utils.path_utils import get_base_dir
 from PySide6.QtWidgets import QApplication
 from PySide6.QtWidgets import QMessageBox
@@ -16,9 +16,10 @@ from PySide6.QtWidgets import QSizePolicy
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
                                QLabel, QTextEdit, QProgressBar,
                                QGroupBox, QCheckBox, QFileDialog)
-
+from utils.path_utils import resource_path
 from settings.settings_manager import SettingsManager
 from worker.packer_worker import PackerWorker
+from utils.sound_player import SoundPlayer
 
 
 class TexturePackerWindow(QWidget):
@@ -26,17 +27,12 @@ class TexturePackerWindow(QWidget):
         super().__init__()
         self.settings = SettingsManager()
         self.resource_manager = self._init_resource_manager()
+        self.sound_player = SoundPlayer()
 
         self.worker_thread = None
         self._init_ui()
         self._load_settings()
         self._setup_connections()
-
-        self.player = QMediaPlayer()
-        self.player.errorOccurred.connect(lambda err: print(f"Player error: {err}"))
-        self.player.mediaStatusChanged.connect(lambda status: print(f"Media status: {status}"))
-        self.audio_output = QAudioOutput()
-        self.player.setAudioOutput(self.audio_output)
 
     @staticmethod
     def _init_resource_manager():
@@ -45,7 +41,7 @@ class TexturePackerWindow(QWidget):
         return ResourceManager(path)
 
     def _init_ui(self):
-        self.setWindowTitle("ORM Texture Packer")
+        self.setWindowTitle("ORM Texture Packer. By Serhii Ru.")
         self.resize(720, 540)
         self.setAcceptDrops(True)
 
@@ -216,55 +212,28 @@ class TexturePackerWindow(QWidget):
 
     def _handle_delete_files(self):
         folder_path = self.folder_path_edit.text().strip()
-        if not folder_path or not os.path.isdir(folder_path):
-            self.log_output.append("⚠️ Invalid folder path.")
-            return
-
-        # Get suffixes and normalize (strip and lower)
         suffixes = [
-            self.ao_suffix.text().strip().lower(),
-            self.roughness_suffix.text().strip().lower(),
-            self.metallic_suffix.text().strip().lower(),
+            self.ao_suffix.text(),
+            self.roughness_suffix.text(),
+            self.metallic_suffix.text(),
         ]
-        # Filter out empty suffixes
-        suffixes = [s for s in suffixes if s]
 
-        if not suffixes:
-            self.log_output.append("⚠️ No suffixes specified for deletion.")
-            return
-
-        # Find matching files
-        files_to_delete = []
-        for filename in os.listdir(folder_path):
-            base, ext = os.path.splitext(filename)
-            base_lower = base.lower()
-            for suffix in suffixes:
-                if base_lower.endswith('_' + suffix):
-                    files_to_delete.append(filename)
-                    break
+        self.cleaner = FileCleaner(folder_path, suffixes, self.log_output.append)
+        files_to_delete = self.cleaner.delete_matching_files()
 
         if not files_to_delete:
-            self.log_output.append("⚠️ No files matched the given suffixes for deletion in current folder.")
             return
 
-        # Confirmation dialog
+        # Show confirmation
         msg_box = QMessageBox()
         msg_box.setWindowTitle("Confirm Delete")
         msg_box.setText(f"Are you sure you want to delete {len(files_to_delete)} files?")
         msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
         msg_box.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        result = msg_box.exec()
 
-        ret = msg_box.exec()
-        if ret == QMessageBox.StandardButton.Yes:
-            deleted_count = 0
-            for file in files_to_delete:
-                try:
-                    os.remove(os.path.join(folder_path, file))
-                    self.log_output.append(f'<span style="color:black">⚠️ <b>Deleted</>: {file}</span>')
-                    deleted_count += 1
-                except Exception as e:
-                    self.log_output.append(f"⚠️ Failed to delete {file}: {e}")
-            self.log_output.append(f"❗<b>Deletion</b> complete: <b>{deleted_count}</b> files deleted.")
+        if result == QMessageBox.StandardButton.Yes:
+            self.cleaner.perform_deletion(files_to_delete)
         else:
             self.log_output.append("⚠️ Delete operation canceled.")
 
@@ -434,12 +403,12 @@ class TexturePackerWindow(QWidget):
         self.log_output.ensureCursorVisible()
 
     def _play_done_sound(self):
-        base_dir = get_base_dir()
-        sound_path = os.path.join(base_dir, "resources", "done.wav")
-        url = QUrl.fromLocalFile(sound_path)
-        self.player.setSource(url)
-        self.audio_output.setVolume(0.5)
-        self.player.play()
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+
+        sound_path = resource_path('resources/done.wav')
+        self.sound_player.play(sound_path)
+        path = os.path.normpath(os.path.join(base_dir, '..', 'resources', 'done.wav'))
+        self.sound_player.play(path)
 
     @staticmethod
     def _show_manual():
