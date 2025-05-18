@@ -10,9 +10,9 @@ No coding skills required. Just drag your textures into a folder and run the pac
 
 An ORM (Occlusion-Roughness-Metallic) texture combines:
 
-- **Red channel**: Ambient Occlusion (AO)
-- **Green channel**: Roughness
-- **Blue channel**: Metallic
+- **Red channel**: Ambient Occlusion (AO)  
+- **Green channel**: Roughness  
+- **Blue channel**: Metallic  
 
 Game engines use these combined textures to save memory and optimize performance.
 
@@ -35,6 +35,7 @@ MyModel_ambient_occlusion.png
 MyModel_rough.png
 
 
+
 The tool lets you configure these suffixes.
 
 ---
@@ -43,12 +44,16 @@ The tool lets you configure these suffixes.
 
 When you launch the app:
 
-1. **Select the folder** with your textures.
-2. **Set suffixes** for AO, Roughness, and Metallic maps. Example:
-   - AO: `ao,ambient_occlusion`
-   - Roughness: `rough,roughness`
-   - Metallic: `metal,metallic`
-3. (Optional) Enable **Log to File** to save the output report.
+1. **Select the folder** with your textures.  
+2. **Set suffixes** for AO, Roughness, and Metallic maps. Example:  
+   - AO: `ao,ambient_occlusion`  
+   - Roughness: `rough,roughness`  
+   - Metallic: `metal,metallic`  
+3. (Optional) Enable additional features:  
+   - 🌙 **Dark Theme** — easier on the eyes in low-light environments  
+   - 📄 **Log to File** — save the report to a `.txt` file  
+   - 🔊 **Sound on Finish** — helpful for large batches; get notified when it's done  
+   - 🗑️ **Delete Obsolete Textures** — automatically remove source AO, Roughness, and Metallic textures after packing
 
 ---
 
@@ -60,18 +65,21 @@ It will check if all required maps are available for each model and create a new
 
 Example output:
 
-MyModel_ORM.png
 
+MyModel_ORM.png
 
 ---
 
 ## ✅ Features
 
-- Supports **.png** and **.jpg** formats
-- Accepts **multiple suffix names** per map
-- Checks for **missing or mismatched textures**
-- Creates a compact **ORM texture**
-- Optional logging to a text file
+- Supports **.png** and **.jpg** formats  
+- Accepts **multiple suffix names** per map  
+- Checks for **missing or mismatched textures**  
+- Creates a compact **ORM texture**  
+- Optional logging to a text file  
+- Optional deletion of obsolete input textures  
+- Visual themes (light/dark)  
+- Background use with sound notification  
 
 ---
 
@@ -79,12 +87,28 @@ MyModel_ORM.png
 
 The packed files will be saved **in the same folder** as your source textures.
 
-If you enable logging, a file like this will be created:
+If logging is enabled, a log file like this will be created:
+
+
 
 packing_log_20250515.txt
 
 
 ---
+
+
+## 💿 How to Get the Installer (Windows Only)
+
+1. Go to the [Releases](https://github.com/Sergey-Russiyan/ORM_Packer/releases) section of the GitHub project.  
+2. Download the file named:  
+
+ORMTexturePackerInstaller.exe
+
+3. Run the installer and follow the instructions.  
+4. Once installed, launch the application from your desktop or Start menu.
+
+> 💡 The tool is only available for **Windows OS** at this time.
+
 
 ## 🛠 Troubleshooting
 
