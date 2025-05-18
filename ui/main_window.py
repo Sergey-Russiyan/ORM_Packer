@@ -1,46 +1,61 @@
 import json
 import os
 import webbrowser
-from typing import cast
+from pathlib import Path
+from typing import Optional, Dict, Any, cast, Union, Tuple
 
-from PySide6.QtCore import QThread
-from PySide6.QtCore import QTimer, QPoint
-
+from PySide6.QtCore import QThread, QTimer, QPoint, Signal, QObject
+from PySide6.QtWidgets import (QApplication, QMessageBox, QPushButton, QToolTip,
+                               QSizePolicy, QWidget, QVBoxLayout, QHBoxLayout,
+                               QLineEdit, QLabel, QTextEdit, QProgressBar,
+                               QGroupBox, QCheckBox, QFileDialog)
+from pkg_resources import ResourceManager
 
 from utils.file_cleaner import FileCleaner
-from utils.path_utils import get_base_dir
-from PySide6.QtWidgets import QApplication
-from PySide6.QtWidgets import QMessageBox
-from PySide6.QtWidgets import QPushButton, QToolTip
-from PySide6.QtWidgets import QSizePolicy
-from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLineEdit,
-                               QLabel, QTextEdit, QProgressBar,
-                               QGroupBox, QCheckBox, QFileDialog)
-from utils.path_utils import resource_path
+from utils.path_utils import get_base_dir, resource_path
 from settings.settings_manager import SettingsManager
 from worker.packer_worker import PackerWorker
 from utils.sound_player import SoundPlayer
 
 
+class Signals(QObject):
+    """Centralized signal handling for worker communication"""
+    progress = Signal(str)
+    progress_with_color = Signal(str, str)
+    progress_percent = Signal(int)
+    finished = Signal()
+    finished_with_count = Signal(int)
+
+
 class TexturePackerWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.settings = SettingsManager()
-        self.resource_manager = self._init_resource_manager()
-        self.sound_player = SoundPlayer()
-
-        self.worker_thread = None
+        self._setup_initial_state()
         self._init_ui()
         self._load_settings()
         self._setup_connections()
+        self._setup_signal_connections()
+
+    def _setup_initial_state(self):
+        """Initialize all state variables"""
+        self.settings = SettingsManager()
+        self.resource_manager = self._init_resource_manager()
+        self.sound_player = SoundPlayer()
+        self.worker_thread: Optional[QThread] = None
+        self.worker: Optional[PackerWorker] = None
+        self.cleaner: Optional[FileCleaner] = None
+        self.packed_files_count = 0
+        self.signals = Signals()
 
     @staticmethod
-    def _init_resource_manager():
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.normpath(os.path.join(base_dir, '..', 'resources', 'i18n', 'tooltips_en.json'))
-        return ResourceManager(path)
+    def _init_resource_manager() -> 'ResourceManager':
+        """Initialize the resource manager with tooltips"""
+        base_dir = Path(__file__).parent
+        path = base_dir / '..' / 'resources' / 'i18n' / 'tooltips_en.json'
+        return ResourceManager(str(path.resolve()))
 
     def _init_ui(self):
+        """Initialize all UI components"""
         self.setWindowTitle("ORM Texture Packer. By Serhii Ru.")
         self.resize(720, 540)
         self.setAcceptDrops(True)
@@ -50,7 +65,7 @@ class TexturePackerWindow(QWidget):
         self._create_suffix_ui()
         self._create_log_ui()
         self._create_advanced_ui()
-        buttons_container = self._create_buttons()  # Get the container widget
+        buttons_container = self._create_buttons()
 
         # Main layout
         layout = QVBoxLayout(self)
@@ -60,20 +75,11 @@ class TexturePackerWindow(QWidget):
         layout.addWidget(self.progress_bar)
         layout.addWidget(self.advanced_button)
         layout.addWidget(self.advanced_options_group)
-
         layout.addWidget(buttons_container)
-
-    def make_button(self, text, tooltip_key=None):
-        return DelayedTooltipButton(
-            text,
-            tooltip_key,
-            resource_manager=self.resource_manager  # default
-        )
 
     def _create_folder_ui(self):
         self.folder_layout = QHBoxLayout()
         self.folder_path_edit = QLineEdit()
-        self.folder_button = QPushButton()
         self.folder_button = self.make_button("📁", "exp_button_t")
         self.folder_clear_button = self.make_button("❌", "clear_button_t")
 
@@ -135,7 +141,7 @@ class TexturePackerWindow(QWidget):
         buttons_container = QWidget()
         buttons_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         main_layout = QHBoxLayout(buttons_container)
-        main_layout.setSpacing(10)  # Fixed spacing between sections
+        main_layout.setSpacing(10)
         main_layout.setContentsMargins(0, 0, 0, 0)
 
         # 1. Start Button Section (1/3 width)
@@ -145,72 +151,91 @@ class TexturePackerWindow(QWidget):
 
         self.pack_button = self.make_button("🔄 Start Pack", "pack_button_t")
         self.pack_button.setObjectName("packButton")
-
         self.delete_button = self.make_button("🗑️ Delete Files", "delete_button_t")
         self.delete_button.setObjectName("deleteButton")
 
-        self.pack_button.setFixedHeight(60)  # Fixed 2x height
+        self.pack_button.setFixedHeight(60)
         start_layout.addWidget(self.pack_button)
-        main_layout.addWidget(start_container, stretch=1)  # 1/3 width
+        main_layout.addWidget(start_container, stretch=1)
 
-        self.delete_button.setFixedHeight(60)  # Fixed 2x height
+        self.delete_button.setFixedHeight(60)
         start_layout.addWidget(self.delete_button)
 
         # 2. Right Buttons Section (2/3 width total)
         right_container = QWidget()
         right_layout = QHBoxLayout(right_container)
-        right_layout.setSpacing(10)  # Fixed spacing between button columns
+        right_layout.setSpacing(10)
         right_layout.setContentsMargins(0, 0, 0, 0)
 
         # First column (1/3 width)
         col1 = QWidget()
         col1_layout = QVBoxLayout(col1)
         col1_layout.setSpacing(5)
-        self.cancel_button = QPushButton()
         self.cancel_button = self.make_button("✋ Cancel", "cancel_button_t")
         self.manual_button = self.make_button("📖 Manual", "manual_button_t")
         for btn in [self.cancel_button, self.manual_button]:
-            btn.setFixedHeight(30)  # Normal height
+            btn.setFixedHeight(30)
         col1_layout.addWidget(self.cancel_button)
         col1_layout.addWidget(self.manual_button)
-        right_layout.addWidget(col1, stretch=1)  # 1/3 width
+        right_layout.addWidget(col1, stretch=1)
 
         # Second column (1/3 width)
         col2 = QWidget()
         col2_layout = QVBoxLayout(col2)
         col2_layout.setSpacing(5)
-
         self.buy_button = self.make_button("☕ Buy me a Coffee", "coffee_button_t")
         self.feedback_button = self.make_button("📧 Write Email", "email_button_t")
-
         for btn in [self.buy_button, self.feedback_button]:
-            btn.setFixedHeight(30)  # Normal height
+            btn.setFixedHeight(30)
         col2_layout.addWidget(self.buy_button)
         col2_layout.addWidget(self.feedback_button)
-        right_layout.addWidget(col2, stretch=1)  # 1/3 width
+        right_layout.addWidget(col2, stretch=1)
 
-        main_layout.addWidget(right_container, stretch=2)  # 2/3 width total
-
+        main_layout.addWidget(right_container, stretch=2)
         return buttons_container
 
     def _setup_connections(self):
+        """Setup all signal-slot connections"""
+        # Folder operations
         self.folder_button.clicked.connect(self._select_folder)
         self.folder_clear_button.clicked.connect(lambda: self.folder_path_edit.setText(""))
 
+        # Main operations
         self.pack_button.clicked.connect(self._start_packing)
         self.delete_button.clicked.connect(self._handle_delete_files)
 
+        # Button actions
         self.cancel_button.clicked.connect(self._cancel_packing)
         self.manual_button.clicked.connect(self._show_manual)
         self.buy_button.clicked.connect(self._open_donation_link)
         self.feedback_button.clicked.connect(self._open_email_client)
         self.advanced_button.clicked.connect(self._toggle_advanced_options)
 
+        # Checkbox actions
         self.dark_theme_checkbox.stateChanged.connect(self._on_theme_checkbox_changed)
         self.export_log_checkbox.stateChanged.connect(self._on_checkbox_changed)
         self.sound_checkbox.stateChanged.connect(self._on_checkbox_changed)
 
+    def _setup_signal_connections(self):
+        """Connect all worker signals to their handlers"""
+        self.signals.progress.connect(self._handle_log_output)
+        self.signals.progress_with_color.connect(
+            lambda text, color: self._handle_log_output(f'<span style="color:{color}">{text}</span>')
+        )
+        self.signals.progress_percent.connect(self.progress_bar.setValue)
+        self.signals.finished.connect(self._finish_packing)
+        self.signals.finished_with_count.connect(self._handle_finished_count)
+
+    def make_button(self, text: str, tooltip_key: Optional[str] = None) -> 'DelayedTooltipButton':
+        """Factory method for creating consistent buttons with tooltips"""
+        return DelayedTooltipButton(
+            text,
+            tooltip_key,
+            resource_manager=self.resource_manager
+        )
+
     def _handle_delete_files(self):
+        """Handle file deletion with confirmation"""
         folder_path = self.folder_path_edit.text().strip()
         suffixes = [
             self.ao_suffix.text(),
@@ -224,7 +249,7 @@ class TexturePackerWindow(QWidget):
         if not files_to_delete:
             return
 
-        # Show confirmation
+        # Show confirmation dialog
         msg_box = QMessageBox()
         msg_box.setWindowTitle("Confirm Delete")
         msg_box.setText(f"Are you sure you want to delete {len(files_to_delete)} files?")
@@ -238,28 +263,30 @@ class TexturePackerWindow(QWidget):
             self.log_output.append("⚠️ Delete operation canceled.")
 
     def _toggle_advanced_options(self):
+        """Toggle visibility of advanced options"""
         visible = self.advanced_button.isChecked()
         self.advanced_options_group.setVisible(visible)
-        self.advanced_button.setText("Advanced Options ▲" if visible else "Advanced Options ▼")
+        self.advanced_button.setText(
+            "Advanced Options ▲" if visible else "Advanced Options ▼"
+        )
 
     def _on_theme_checkbox_changed(self, state: int):
+        """Handle theme change checkbox"""
         dark_theme = bool(state)
-        print(f"Theme checkbox changed. State: {state} -> {'dark' if dark_theme else 'light'}")
         self._apply_theme(dark_theme)
         self._save_settings()
 
     def _on_checkbox_changed(self, state):
+        """Generic checkbox change handler"""
         self._save_settings()
 
     @staticmethod
     def _apply_theme(dark_theme: bool):
+        """Apply the selected theme to the application"""
         try:
             base_dir = get_base_dir()
             theme_file = "dark_theme.qss" if dark_theme else "light_theme.qss"
             theme_path = os.path.join(base_dir, "resources", theme_file)
-
-            print(f"Expected theme file path: {theme_path}")
-            print(f"Exists? {os.path.exists(theme_path)}")
 
             if os.path.exists(theme_path):
                 with open(theme_path, "r", encoding='utf-8') as f:
@@ -272,7 +299,7 @@ class TexturePackerWindow(QWidget):
 
                 app = QApplication.instance()
                 if app is not None:
-                    app = cast(QApplication, app)  # Help IDE understand type
+                    app = cast(QApplication, app)
                     app.setStyle("Fusion")
                     app.setStyleSheet("")
                     QApplication.processEvents()
@@ -284,13 +311,11 @@ class TexturePackerWindow(QWidget):
                     widget.style().polish(widget)
                     widget.update()
 
-                print(f"Successfully applied {'dark' if dark_theme else 'light'} theme")
-            else:
-                print(f"Theme file not found at: {theme_path}")
         except Exception as e:
             print(f"Error applying theme: {str(e)}")
 
     def _load_settings(self):
+        """Load settings from persistent storage"""
         settings = self.settings.load_settings()
 
         # Dark theme checkbox + theme application
@@ -307,6 +332,7 @@ class TexturePackerWindow(QWidget):
         self.sound_checkbox.setChecked(settings['advanced']['play_sound'])
 
     def _save_settings(self):
+        """Save current settings to persistent storage"""
         current_settings = {
             'folder': self.folder_path_edit.text(),
             'suffixes': {
@@ -320,20 +346,26 @@ class TexturePackerWindow(QWidget):
                 'play_sound': self.sound_checkbox.isChecked()
             }
         }
-        print(f"Saving settings: {current_settings['advanced']}")
         self.settings.save_settings(current_settings)
 
     def _select_folder(self):
-        folder = QFileDialog.getExistingDirectory(self, "Select Folder", self.folder_path_edit.text())
+        """Open folder selection dialog"""
+        folder = QFileDialog.getExistingDirectory(
+            self,
+            "Select Folder",
+            self.folder_path_edit.text()
+        )
         if folder:
             self.folder_path_edit.setText(folder)
             self._save_settings()
 
     def _start_packing(self):
-        folder = self.folder_path_edit.text()
-        if not folder or not os.path.isdir(folder):
-            self.log_output.append('<span style="color:orange">⚠️ Please select a valid folder before starting.</span>')
+        """Start the packing process with validation"""
+        folder = self.folder_path_edit.text().strip()
+        if not self._validate_folder(folder):
             return
+
+        self._prepare_for_packing()
 
         suffixes = {
             'ao': self.ao_suffix.text(),
@@ -342,59 +374,90 @@ class TexturePackerWindow(QWidget):
         }
         log_to_file = self.export_log_checkbox.isChecked()
 
+        self.worker = PackerWorker(folder, suffixes, log_to_file, self.signals)
+        self._start_worker_thread()
+
+    def _validate_folder(self, folder: str) -> bool:
+        """Validate the selected folder path"""
+        if not folder or not os.path.isdir(folder):
+            self._handle_log_output(
+                '<span style="color:orange">⚠️ Please select a valid folder before starting.</span>'
+            )
+            return False
+        return True
+
+    def _prepare_for_packing(self):
+        """Prepare UI for packing process"""
         self.pack_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
         self.log_output.clear()
         self.progress_bar.setValue(0)
+        self.packed_files_count = 0
 
-        self.worker = PackerWorker(folder, suffixes, log_to_file)
+    def _start_worker_thread(self):
+        """Start the worker thread safely"""
+        if self.worker_thread and self.worker_thread.isRunning():
+            self.worker_thread.quit()
+            self.worker_thread.wait()
+
         self.worker_thread = QThread()
         self.worker.moveToThread(self.worker_thread)
-
-        self.worker.progress.connect(self._handle_log_output)
-        self.worker.progress_percent.connect(self.progress_bar.setValue)
-        self.worker.finished.connect(self._finish_packing)
-        self.worker.finished_with_count.connect(self._handle_finished_count)
-
         self.worker_thread.started.connect(self.worker.run)
         self.worker_thread.start()
-
         self._save_settings()
 
     def _cancel_packing(self):
+        """Cancel the current packing operation"""
         if hasattr(self, "worker"):
             self.worker.stopped = True
         self.pack_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
-        self.log_output.append('<span style="color:black">⚠️ Packing <b>cancelled</b> by user. Finalizing packing of last texture in progress...</span>')
+        self._handle_log_output(
+            '<span style="color:black">⚠️ Packing <b>cancelled</b> by user. '
+            'Finalizing packing of last texture in progress...</span>'
+        )
 
-    def _handle_finished_count(self, count):
-        print(f"_handle_finished_count called with: {count}")
+    def _handle_finished_count(self, count: int):
+        """Handle completion with file count"""
         self.packed_files_count = count
         if count == 0:
-            self.log_output.append('<span style="color:orange">⚠️ <b>No files were packed.</b></span>')
+            self._handle_log_output(
+                '<span style="color:orange">⚠️ <b>No files were packed.</b></span>'
+            )
         else:
-            self.log_output.append(f'<span style="color:green">🎉 <b>{count}</b> files packed successfully.</span>')
+            self._handle_log_output(
+                f'<span style="color:green">🎉 <b>{count}</b> files packed successfully.</span>'
+            )
 
     def _finish_packing(self):
-        print("_finish_packing called")
+        """Clean up after packing completes"""
         self.pack_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         self.progress_bar.setValue(100)
 
-        if hasattr(self, "packed_files_count") and self.packed_files_count == 0:
-            self.log_output.append('<span style="color:orange">⚠️ No files matched the suffixes. Nothing packed.</span>')
+        if not hasattr(self, "packed_files_count") or self.packed_files_count == 0:
+            self._handle_log_output(
+                '<span style="color:orange">⚠️ No files matched the suffixes. Nothing packed.</span>'
+            )
         else:
-            self.log_output.append('<span style="color:green">🎉 Packing process <b>finished</b>.</span>')
+            self._handle_log_output(
+                '<span style="color:green">🎉 Packing process <b>finished</b>.</span>'
+            )
 
         if self.sound_checkbox.isChecked():
             self._play_done_sound()
 
+        self._cleanup_worker_thread()
+
+    def _cleanup_worker_thread(self):
+        """Safely clean up worker thread"""
         if hasattr(self, "worker_thread"):
             self.worker_thread.quit()
             self.worker_thread.wait()
+            self.worker_thread = None
 
-    def _handle_log_output(self, message):
+    def _handle_log_output(self, message: Union[str, Tuple[str, str]]):
+        """Handle log output with optional color formatting"""
         if isinstance(message, tuple):
             text, color = message
             self.log_output.append(f'<span style="color:{color}">{text}</span>')
@@ -403,23 +466,26 @@ class TexturePackerWindow(QWidget):
         self.log_output.ensureCursorVisible()
 
     def _play_done_sound(self):
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-
+        """Play completion sound if enabled"""
+        base_dir = Path(__file__).parent
         sound_path = resource_path('resources/done.wav')
         self.sound_player.play(sound_path)
-        path = os.path.normpath(os.path.join(base_dir, '..', 'resources', 'done.wav'))
-        self.sound_player.play(path)
+        path = base_dir / '..' / 'resources' / 'done.wav'
+        self.sound_player.play(str(path.resolve()))
 
     @staticmethod
     def _show_manual():
+        """Open the user manual in default browser"""
         webbrowser.open("https://github.com/Sergey-Russiyan/ORM_Packer/blob/main/README.md")
 
     @staticmethod
     def _open_donation_link():
+        """Open donation link in default browser"""
         webbrowser.open("https://buymeacoffee.com/badgamesokt")
 
     @staticmethod
     def _open_email_client():
+        """Open email client with feedback template"""
         email = "bad.games.ok@gmail.com"
         subject = "Feedback for Texture Packer App"
         body = "Hi,\n\nI wanted to share the following feedback:\n\n"
@@ -431,15 +497,15 @@ class TexturePackerWindow(QWidget):
             f"&su={subject}"
             f"&body={body}"
         )
-
-        # Open in default browser (should be Chrome for most users)
         webbrowser.open(gmail_url)
 
     def dragEnterEvent(self, event):
+        """Handle drag enter event for folder dropping"""
         if event.mimeData().hasUrls():
             event.acceptProposedAction()
 
     def dropEvent(self, event):
+        """Handle folder drop event"""
         urls = event.mimeData().urls()
         if urls:
             local_path = urls[0].toLocalFile()
@@ -447,43 +513,67 @@ class TexturePackerWindow(QWidget):
                 self.folder_path_edit.setText(local_path)
                 self._save_settings()
 
+
 class DelayedTooltipButton(QPushButton):
-    def __init__(self, text, tooltip_key=None, delay_ms=1000, resource_manager=None, parent=None):
+    """Custom button with delayed tooltip functionality"""
+
+    def __init__(
+            self,
+            text: str,
+            tooltip_key: Optional[str] = None,
+            delay_ms: int = 1000,
+            resource_manager: Optional[ResourceManager] = None,
+            parent: Optional[QWidget] = None
+    ):
         super().__init__(text, parent)
         self._delay_ms = delay_ms
         self._tooltip_key = tooltip_key
         self._resource_manager = resource_manager
+        self._tooltip_text = self._get_tooltip_text()
+        self._init_timer()
 
-        # Set tooltip text if resource manager and key are provided
+    def _get_tooltip_text(self) -> Optional[str]:
+        """Get tooltip text from resource manager if available"""
         if self._tooltip_key and self._resource_manager:
-            self._tooltip_text = self._resource_manager.get(self._tooltip_key, "Tooltip not found")
-        else:
-            self._tooltip_text = None
+            return self._resource_manager.get(self._tooltip_key, "Tooltip not found")
+        return None
 
-        # Timer for delayed tooltip
+    def _init_timer(self):
+        """Initialize the tooltip timer"""
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self._show_tooltip)
 
     def enterEvent(self, event):
+        """Handle mouse enter event to start tooltip timer"""
         super().enterEvent(event)
         if self._tooltip_text:
             self._timer.start(self._delay_ms)
 
     def leaveEvent(self, event):
+        """Handle mouse leave event to hide tooltip"""
         super().leaveEvent(event)
         if self._timer.isActive():
             self._timer.stop()
             QToolTip.hideText()
 
     def _show_tooltip(self):
+        """Display the tooltip at the bottom center of the button"""
         if self._tooltip_text:
-            QToolTip.showText(self.mapToGlobal(QPoint(self.width() // 2, self.height())), self._tooltip_text, self)
+            QToolTip.showText(
+                self.mapToGlobal(QPoint(self.width() // 2, self.height())),
+                self._tooltip_text,
+                self
+            )
+
 
 class ResourceManager:
-    def __init__(self, resource_file):
+    """Manages localized resources and tooltips"""
+
+    def __init__(self, resource_file: str):
         with open(resource_file, encoding='utf-8') as f:
             self.data = json.load(f)
 
-    def get(self, key, default=None):
+    def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        """Get a resource string by key"""
         return self.data.get(key, default)

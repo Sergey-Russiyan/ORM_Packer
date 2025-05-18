@@ -1,11 +1,41 @@
 {
-  "exp_button_t": "Select folder in Explorer",
-  "clear_button_t": "Clear selected path to the folder",
-  "pack_button_t": "Start packing textures into single 'ORM' texture",
-  "adv_opt_button_t": "Additional settings, will be saved on app closing",
-  "manual_button_t": "Open the user manual on github",
-  "cancel_button_t": "Cancel packaging. Wait app completes last texture in use",
-  "coffee_button_t": "Show appreciation dev for his time and effort",
-  "email_button_t": "Gave feedback, report bug, request feature or just say 'Hi!'",
-  "delete_button_t": "Delete all files with suffixes from AO / Roughness / Metallic fields"
+  "buttons": {
+    "folder": {
+      "text": "📁",
+      "tooltip": "Select folder in Explorer"
+    },
+    "clear": {
+      "text": "❌",
+      "tooltip": "Clear selected path to the folder"
+    },
+    "pack": {
+      "text": "🔄 Start Pack",
+      "tooltip": "Start packing textures into single 'ORM' texture"
+    },
+    "delete": {
+      "text": "🗑️ Delete Files",
+      "tooltip": "Delete all files with suffixes from AO / Roughness / Metallic fields"
+    },
+    "cancel": {
+      "text": "✋ Cancel",
+      "tooltip": "Cancel packaging. Wait app completes last texture in use"
+    },
+    "manual": {
+      "text": "📖 Manual",
+      "tooltip": "Open the user manual on github"
+    },
+    "coffee": {
+      "text": "☕ Buy me a Coffee",
+      "tooltip": "Show appreciation dev for his time and effort"
+    },
+    "email": {
+      "text": "📧 Write Email",
+      "tooltip": "Gave feedback, report bug, request feature or just say 'Hi!'"
+    },
+    "advanced_options": {
+      "text_collapsed": "Advanced Options ▼",
+      "text_expanded": "Advanced Options ▲",
+      "tooltip": "Additional settings, will be saved on app closing"
+    }
+  }
 }
