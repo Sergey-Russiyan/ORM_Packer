@@ -11,4 +11,4 @@ SolidCompression=yes
 Source: "dist\ORMTexturePacker.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\ORMTexturePacker"; Filename: "{app}\main.exe"
+Name: "{group}\ORMTexturePacker"; Filename: "{app}\ORMTexturePacker.exe"
