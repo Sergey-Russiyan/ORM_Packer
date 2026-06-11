@@ -1,159 +1,160 @@
-# 🧃 Texture Packer — ORM Map Generator
 
-**Texture Packer** is a simple tool designed for 3D artists and game modders. It helps you **combine three texture maps** (Ambient Occlusion, Roughness, and Metallic) into a single **ORM texture** used in game engines like Unreal Engine and Unity.
-
-No coding skills required. Just drag your textures into a folder and run the packer!
+### 🧃 **Texture Packer — ORM Map Generator**  
+**A tool for 3D artists and game modders to combine AO, Roughness, and Metallic maps into a single ORM texture for game engines like Unreal Engine and Unity.**
 
 ---
 
-## 🧩 What is an ORM Texture?
-
-An ORM (Occlusion-Roughness-Metallic) texture combines:
-
+### 🧩 **What is an ORM Texture?**  
+An ORM (Occlusion-Roughness-Metallic) texture combines three channels into a single image:  
 - **Red channel**: Ambient Occlusion (AO)  
 - **Green channel**: Roughness  
 - **Blue channel**: Metallic  
 
-Game engines use these combined textures to save memory and optimize performance.
+Game engines use these textures to save memory and optimize performance.
 
 ---
 
-## 🎨 How to Use
+### 🎨 **How to Use**  
+#### 1. 📁 Prepare Your Textures  
+- Place all textures in a **single folder**.  
+- Name them with **clear suffixes** (e.g., `MyModel_ao.png`, `MyModel_roughness.png`, `MyModel_metallic.png`).  
+- **Alternative suffixes**: `ao`, `roughness`, `metallic`, `occlusion`, `metal`, etc.  
 
-### 1. 💾 Prepare Your Textures
-
-Put all your textures in one folder. Name them using a clear suffix like:
-
-MyModel_ao.png
-MyModel_roughness.png
+**Example folder structure**:  
+```
+MyModel_ao.png  
+MyModel_roughness.png  
 MyModel_metallic.png
+```
 
+#### 2. ⚙️ Configure Your Settings  
+- **Select the folder** containing your textures.  
+- **Set suffixes** for each map (e.g., `AO: ao, ambient_occlusion`, `Roughness: roughness, rough`, `Metallic: metallic, metal`).  
+- **Optional features**:  
+  - 🌙 Dark Theme (for low-light environments)  
+  - 📄 Log to File (save output to a `.txt` file)  
+  - 🗑️ Delete Obsolete Textures (remove original files after packing)  
+  - 🔊 Sound on Finish (notify when done)  
 
-You can also use alternative endings like:
+#### 3. 🚀 Start Packing  
+- Click **Start** to generate the ORM texture.  
+- Output: A new file named `MyModel_ORM.png` will be created in the same folder.  
 
-MyModel_ambient_occlusion.png
-MyModel_rough.png
-
-
-
-The tool lets you configure these suffixes.
-
----
-
-### 2. ⚙️ Choose Your Settings
-
-When you launch the app:
-
-1. **Select the folder** with your textures.  
-2. **Set suffixes** for AO, Roughness, and Metallic maps. Example:  
-   - AO: `ao,ambient_occlusion`  
-   - Roughness: `rough,roughness`  
-   - Metallic: `metal,metallic`  
-3. (Optional) Enable additional features:  
-   - 🌙 **Dark Theme** — easier on the eyes in low-light environments  
-   - 📄 **Log to File** — save the report to a `.txt` file  
-   - 🔊 **Sound on Finish** — helpful for large batches; get notified when it's done  
-   - 🗑️ **Delete Obsolete Textures** — automatically remove source AO, Roughness, and Metallic textures after packing
-
----
-
-### 3. 🚀 Start Packing
-
-Click the **Start** button and let the tool do its magic.
-
-It will check if all required maps are available for each model and create a new `*_ORM.png` file in the same folder.
-
-Example output:
-
-
+**Example output**:  
+```
 MyModel_ORM.png
+```
 
 ---
 
-## ✅ Features
-
+### ✅ **Features**  
 - Supports **.png** and **.jpg** formats  
-- Accepts **multiple suffix names** per map  
-- Checks for **missing or mismatched textures**  
-- Creates a compact **ORM texture**  
-- Optional logging to a text file  
-- Optional deletion of obsolete input textures  
-- Visual themes (light/dark)  
-- Background use with sound notification  
+- Accepts **multiple suffixes** for each map  
+- **Checks for missing/mismatched textures**  
+- **Optional logging** to a `.txt` file  
+- **Visual themes** (light/dark)  
+- **Background processing** with sound notification  
+- **Safe operation**: Original textures are not overwritten  
 
 ---
 
-## 📁 Output Location
+### 📁 **Output Location**  
+Packed files are saved in the **same folder** as your source textures.  
 
-The packed files will be saved **in the same folder** as your source textures.
-
-If logging is enabled, a log file like this will be created:
-
-
-
+**Log file example**:  
+```
 packing_log_20250515.txt
-
+```
 
 ---
 
-
-## 💿 How to Get the Installer (Windows Only)
-
-1. Go to the [Releases](https://github.com/Sergey-Russiyan/ORM_Packer/releases) section of the GitHub project.  
-2. Download the file named:  
-
-ORMTexturePackerInstaller.exe
-
+### 📦 **How to Get the Installer (Windows Only)**  
+1. Go to the **Releases** section of the GitHub project.  
+2. Download the installer: `ORMTexturePackerInstaller.exe`  
 3. Run the installer and follow the instructions.  
-4. Once installed, launch the application from your desktop or Start menu.
+4. Launch the app from your desktop or Start menu.  
 
-> 💡 The tool is only available for **Windows OS** at this time.
+**Note**: The tool is currently available **only for Windows**.  
 
+---
 
-## 🛠 Troubleshooting
-
+### 🛠️ **Troubleshooting**  
 - **Missing maps?**  
-  Make sure your textures use the correct suffixes (e.g., `ao`, `roughness`, `metallic`).
-
+  - Ensure your textures use the correct suffixes (e.g., `ao`, `roughness`, `metallic`).  
 - **Different image sizes?**  
-  All three maps must be the same size. Resize them in Photoshop or any image editor.
-
+  - All three maps must be the same size. Resize them in Photoshop or any image editor.  
 - **Nothing happens?**  
-  Check the log file (if enabled) for skipped files or errors.
+  - Check the log file (if enabled) for skipped files or errors.  
 
 ---
 
-## 🙋 FAQ
+### 💡 **FAQ**  
+- **Can I use other suffixes like `_occlusion` or `_met`?**  
+  Yes! Just type your preferred endings in the suffix settings, separated by commas.  
+  Example:  
+  ```  
+  AO: ao, ambient_occlusion, occlusion  
+  Metallic: metallic, metal, met  
+  ```  
 
-### Can I use other suffixes like `_occlusion` or `_met`?
-Yes! Just type your preferred endings in the suffix settings, separated by commas.
-
-Example:
-
-AO: ao,ambient_occlusion,occlusion
-Metallic: metallic,metal,met
-
-
----
-
-### Does it overwrite original textures?
-No, the tool only creates new `*_ORM.png` files. Your original textures are safe.
+- **Does it overwrite original textures?**  
+  No. The tool only creates new `*_ORM.png` files. Your original textures remain untouched.  
 
 ---
 
-## ❤️ Made for Artists
-
-This tool was made to **save your time** and **remove the technical hassle**. Focus on your art — let the packer handle the boring bits.
+### 🧩 **Visual Guide to ORM Channels**  
+Here’s how the ORM texture channels are mapped:  
+- **Red**: Ambient Occlusion (AO)  
+- **Green**: Roughness  
+- **Blue**: Metallic  
 
 ---
 
-## 📩 Feedback or Ideas?
+### 📌 **What's New**  
+- **v1.0.1**: Added support for custom suffixes and optional logging.  
+- **v1.0.2**: Improved error handling for mismatched textures.  
 
-Have a feature request or bug to report? Let us know!
+---
 
+### 🤝 **Feedback or Ideas?**  
+Have a feature request or bug to report? Let us know!  
+- **GitHub Issues**: [Link to Issues Page]  
+- **Discord Server**: [Link to Community]  
+- **Email**: [Support Email]  
 
+---
 
+### 📄 **License**  
+This project is open-source and released under the **MIT License**.  
 
+---
 
+### 🚀 **Next Steps**  
+- **Explore the GitHub repository** for source code and updates.  
+- **Join the community** to share feedback or contribute.  
 
+---
 
+### 🧠 **Why Use This Tool?**  
+- **No coding required**: Drag-and-drop simplicity.  
+- **Time-saving**: Automates the tedious process of combining textures.  
+- **Game-ready**: Optimized for Unreal Engine and Unity.  
+
+---
+
+### 🧩 **Contributing**  
+If you're a developer or designer, you can contribute by:  
+- Adding support for new file formats.  
+- Improving the user interface.  
+- Fixing bugs or adding new features.  
+
+**How to contribute**:  
+1. Fork the repository.  
+2. Create a new branch for your feature.  
+3. Submit a pull request.  
+
+---
+
+### 📌 **Final Notes**  
+- This tool is designed to **save your time** and **remove technical hurdles**.  
+- Focus on your art — let the packer handle the rest!  
